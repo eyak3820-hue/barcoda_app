@@ -454,22 +454,21 @@ function startScanner(onDetected) {
     return;
   }
   quaggaActive = true;
-  Quagga.init({
+  // Configure Quagga for better detection on various devices
+  const config = {
     inputStream: {
       type: 'LiveStream',
       target: scannerEl,
+      // Request the environment camera; let browser choose resolution
       constraints: {
-        width: 320,
-        height: 240,
         facingMode: 'environment'
-      },
-      area: { // define rectangle of the detection/localization area
-        top: '0%',    // top offset
-        right: '0%',  // right offset
-        left: '0%',   // left offset
-        bottom: '0%'  // bottom offset
       }
     },
+    locator: {
+      patchSize: 'medium', // one of 'x-small', 'small', 'medium', 'large', 'x-large'
+      halfSample: true
+    },
+    numOfWorkers: (typeof navigator !== 'undefined' && navigator.hardwareConcurrency) ? navigator.hardwareConcurrency : 4,
     decoder: {
       readers: [
         'code_128_reader',
@@ -482,7 +481,8 @@ function startScanner(onDetected) {
       ]
     },
     locate: true
-  }, function(err) {
+  };
+  Quagga.init(config, function(err) {
     if (err) {
       console.error(err);
       return;
