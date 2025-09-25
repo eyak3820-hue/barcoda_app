@@ -195,11 +195,40 @@ function showImport() {
           }
           ordersMap[orderId].parts.push(partUid);
         });
-        // Convert map to array
-        const orders = Object.values(ordersMap);
-        state.db = { orders };
+        // Convert map to array and merge into existing database
+        const newOrders = Object.values(ordersMap);
+        // Ensure database structure exists
+        if (!state.db || !state.db.orders) {
+          state.db = { orders: [] };
+        }
+        newOrders.forEach((newOrder) => {
+          // Find existing order by ID
+          const existingIndex = state.db.orders.findIndex((o) => o.orderId === newOrder.orderId);
+          if (existingIndex >= 0) {
+            const existing = state.db.orders[existingIndex];
+            // Merge parts ensuring uniqueness
+            newOrder.parts.forEach((part) => {
+              if (!existing.parts.includes(part)) {
+                existing.parts.push(part);
+              }
+            });
+            // Update additional fields only if provided in CSV
+            if (newOrder.customer) existing.customer = newOrder.customer;
+            if (newOrder.project) existing.project = newOrder.project;
+            if (newOrder.supplyDate) existing.supplyDate = newOrder.supplyDate;
+            // Reset status to Pending if it hasn't been packed yet
+            if (!existing.status || existing.status !== 'Packed') {
+              existing.status = 'Pending';
+              existing.packedAt = null;
+              existing.packedBy = null;
+            }
+          } else {
+            // Append as new order
+            state.db.orders.push(newOrder);
+          }
+        });
         saveDatabase();
-        alert('המסד נתונים נטען בהצלחה!');
+        alert('המסד נתונים נטען והוזג בהצלחה!');
         showHome();
       },
       error: function(err) {
