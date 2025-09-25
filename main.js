@@ -440,72 +440,47 @@ function showDatabase() {
   // End of showDatabase function
 }
 
-// Start Quagga scanner with callback on detection
-let quaggaActive = false;
+// Multi-format scanner using ZXing library
+let scannerActive = false;
+let codeReader = null;
+
 function startScanner(onDetected) {
   const scannerEl = document.getElementById('scanner-container');
   if (!scannerEl) return;
-  // Clean previous
+  // Clean previous content
   scannerEl.innerHTML = '';
-  // Check if camera supported
-  if (!navigator.mediaDevices || typeof Quagga === 'undefined') {
-    // Fallback: no camera or Quagga not loaded; skip scanning
-    console.warn('Camera or Quagga not available.');
+  // Check if camera and ZXing are available
+  if (!navigator.mediaDevices || typeof ZXing === 'undefined' || !ZXing.BrowserMultiFormatReader) {
+    console.warn('Camera or ZXing not available.');
     return;
   }
-  quaggaActive = true;
-  // Configure Quagga for better detection on various devices
-  const config = {
-    inputStream: {
-      type: 'LiveStream',
-      target: scannerEl,
-      // Request the environment camera; let browser choose resolution
-      constraints: {
-        facingMode: 'environment'
+  scannerActive = true;
+  // Initialize ZXing scanner
+  codeReader = new ZXing.BrowserMultiFormatReader();
+  codeReader.decodeFromVideoDevice(null, scannerEl, (result, err) => {
+    if (!scannerActive) return;
+    if (result) {
+      // Stop scanning and return the decoded text
+      scannerActive = false;
+      stopScanner();
+      const code = result.getText ? result.getText() : result.text || result;
+      if (code) {
+        onDetected(code);
       }
-    },
-    locator: {
-      patchSize: 'medium', // one of 'x-small', 'small', 'medium', 'large', 'x-large'
-      halfSample: true
-    },
-    numOfWorkers: (typeof navigator !== 'undefined' && navigator.hardwareConcurrency) ? navigator.hardwareConcurrency : 4,
-    decoder: {
-      readers: [
-        'code_128_reader',
-        'ean_reader',
-        'ean_8_reader',
-        'code_39_reader',
-        'upc_reader',
-        'codabar_reader',
-        'i2of5_reader'
-      ]
-    },
-    locate: true
-  };
-  Quagga.init(config, function(err) {
-    if (err) {
-      console.error(err);
-      return;
-    }
-    Quagga.start();
-  });
-  Quagga.onDetected(function(result) {
-    if (!quaggaActive) return;
-    const code = result.codeResult.code;
-    if (code) {
-      quaggaActive = false;
-      Quagga.stop();
-      onDetected(code);
     }
   });
 }
 
-// Stop Quagga scanner
 function stopScanner() {
-  if (quaggaActive && typeof Quagga !== 'undefined') {
-    Quagga.stop();
+  if (codeReader) {
+    try {
+      codeReader.reset();
+    } catch (e) {
+      console.warn('Error stopping scanner:', e);
+    }
+    codeReader = null;
   }
-  quaggaActive = false;
+  scannerActive = false;
 }
 
 // Initialise app
