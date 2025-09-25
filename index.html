@@ -7,10 +7,10 @@
     <link rel="manifest" href="manifest.json" />
     <link rel="stylesheet" href="style.css" />
     <title>Order Barcode App</title>
-    <!-- Include QuaggaJS for barcode scanning -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
     <!-- Include Papa Parse for CSV parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <!-- Include ZXing library for multi-format (1D/2D) scanning -->
+    <script src="https://unpkg.com/@zxing/library@0.18.6/umd/index.min.js"></script>
   </head>
   <body>
     <div id="app"></div>
